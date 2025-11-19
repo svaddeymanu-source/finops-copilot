@@ -1,3 +1,10 @@
+terraform {
+  backend "gcs" {
+    bucket = "tfstate-optical-office-475814-t3-prod"
+    prefix = "envs/prod"   # folder-like path inside the bucket
+  }
+}
+
 # APIs
 locals { apis = [
   "run.googleapis.com", "artifactregistry.googleapis.com",
@@ -80,35 +87,35 @@ resource "google_service_account_iam_member" "cb_impersonate_runtime" {
   member             = "serviceAccount:${local.cloud_build_sa}"
 }
 
-# Cloud Build trigger (GitHub App connection assumed)
-resource "google_cloudbuild_trigger" "app" {
-  name        = "finops-app-deploy"
-  description = "Build from app/ and deploy to Cloud Run"
-  filename    = "cloudbuild.yaml"
-  project     = var.project_id
+# # Cloud Build trigger (GitHub App connection assumed)
+# resource "google_cloudbuild_trigger" "app" {
+#   name        = "finops-app-deploy"
+#   description = "Build from app/ and deploy to Cloud Run"
+#   filename    = "cloudbuild.yaml"
+#   project     = var.project_id
 
-  github {
-    owner = var.repo_owner
-    name  = var.repo_name
-    push { branch = "^main$" }
-  }
+#   github {
+#     owner = var.repo_owner
+#     name  = var.repo_name
+#     push { branch = "^main$" }
+#   }
 
-  substitutions = {
-    _SERVICE_NAME     = var.service_name
-    _REGION           = var.region
-    _AR_REPO          = var.ar_repo
-    _RUNTIME_SA_EMAIL = google_service_account.runtime.email
-    _BQ_DATASET       = var.bq_dataset
-    _BQ_ALERTS_TABLE  = var.bq_table
-  }
+#   substitutions = {
+#     _SERVICE_NAME     = var.service_name
+#     _REGION           = var.region
+#     _AR_REPO          = var.ar_repo
+#     _RUNTIME_SA_EMAIL = google_service_account.runtime.email
+#     _BQ_DATASET       = var.bq_dataset
+#     _BQ_ALERTS_TABLE  = var.bq_table
+#   }
 
-  depends_on = [
-    google_project_service.apis,
-    google_artifact_registry_repository.repo,
-    google_service_account.runtime,
-    google_project_iam_member.cb_ar_writer,
-    google_project_iam_member.cb_run_admin,
-    google_service_account_iam_member.cb_impersonate_runtime
-  ]
-}
+#   depends_on = [
+#     google_project_service.apis,
+#     google_artifact_registry_repository.repo,
+#     google_service_account.runtime,
+#     google_project_iam_member.cb_ar_writer,
+#     google_project_iam_member.cb_run_admin,
+#     google_service_account_iam_member.cb_impersonate_runtime
+#   ]
+# }
 
