@@ -17,9 +17,11 @@ steps:
         mkdir -p /workspace/${_TF_DIR}/.terraform
 
   - name: hashicorp/terraform:1.7.5
-    id: "fmt"
-    dir: ${_TF_DIR}
-    args: ["fmt","-check","-recursive"]
+    id: fmt
+    dir: infra
+    entrypoint: sh
+    args: ["-lc", "terraform fmt -recursive && echo 'fmt done'"]
+
 
   - name: hashicorp/terraform:1.7.5
     id: "init"

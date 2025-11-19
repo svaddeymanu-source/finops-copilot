@@ -1,7 +1,7 @@
 terraform {
   backend "gcs" {
     bucket = "tfstate-optical-office-475814-t3-prod"
-    prefix = "envs/prod"   # folder-like path inside the bucket
+    prefix = "envs/prod" # folder-like path inside the bucket
   }
 }
 
@@ -30,6 +30,7 @@ resource "google_artifact_registry_repository" "repo" {
 
 # Runtime SA
 resource "google_service_account" "runtime" {
+  project      = var.project_id
   account_id   = var.runtime_sa_name
   display_name = "FinOps runtime SA"
 }

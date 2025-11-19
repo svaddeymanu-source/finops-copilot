@@ -1,9 +1,16 @@
+substitutions:
+  _TF_BUCKET: tfstate-optical-office-475814-t3-prod        # the GCS bucket you just created
+  _TF_PREFIX: finops-copilot-state                     # any prefix you like
+  _PROJECT_ID: optical-office-475814-t3                # your project id
+  _REPO_OWNER: svaddeymanu-source                      # your GitHub org/user
+  _REPO_NAME: finops-copilot                           # repo name
+  _TF_DIR: "infra"
+  _TF_PLAN_FILE: "plan.tfplan"
+
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: "E2_HIGHCPU_8"
-substitutions:
-  _TF_DIR: "infra"
-  _TF_PLAN_FILE: "plan.tfplan"
+
 
 # If you prefer Cloud Build "Approvals" UI, enable it on the trigger.
 # (In the trigger, check "Require approval".)
