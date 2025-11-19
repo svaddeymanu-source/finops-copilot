@@ -5,6 +5,7 @@ substitutions:
   _TF_DIR: "infra"            # path to your TF code
   _TF_PLAN_FILE: "plan.tfplan"
   _TF_PLAN_TXT: "plan.txt"
+  _TF_VARS_FILE: "infra/terraform.tfvars"
 
 steps:
   # Cache .terraform across builds (optional)
