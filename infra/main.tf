@@ -1,24 +1,24 @@
 # APIs
 locals { apis = [
-  "run.googleapis.com","artifactregistry.googleapis.com",
-  "cloudbuild.googleapis.com","iam.googleapis.com","bigquery.googleapis.com"
-]}
+  "run.googleapis.com", "artifactregistry.googleapis.com",
+  "cloudbuild.googleapis.com", "iam.googleapis.com", "bigquery.googleapis.com"
+] }
 
 resource "google_project_service" "apis" {
-  for_each = toset(local.apis)
-  project  = var.project_id
-  service  = each.value
+  for_each           = toset(local.apis)
+  project            = var.project_id
+  service            = each.value
   disable_on_destroy = false
 }
 
 # Artifact Registry
 resource "google_artifact_registry_repository" "repo" {
-  project = var.project_id
-  location = var.region
+  project       = var.project_id
+  location      = var.region
   repository_id = var.ar_repo
-  format = "DOCKER"
-  description = "Containers for Cloud Run"
-  depends_on = [google_project_service.apis]
+  format        = "DOCKER"
+  description   = "Containers for Cloud Run"
+  depends_on    = [google_project_service.apis]
 }
 
 # Runtime SA
@@ -29,20 +29,20 @@ resource "google_service_account" "runtime" {
 
 # BigQuery
 resource "google_bigquery_dataset" "ds" {
-  dataset_id = var.bq_dataset
-  location   = "US"
+  dataset_id  = var.bq_dataset
+  location    = "US"
   description = "FinOps curated dataset"
-  depends_on = [google_project_service.apis]
+  depends_on  = [google_project_service.apis]
 }
 
 resource "google_bigquery_table" "alerts" {
   dataset_id = google_bigquery_dataset.ds.dataset_id
   table_id   = var.bq_table
   schema = jsonencode([
-    { name = "id",         type = "STRING",    mode = "REQUIRED" },
+    { name = "id", type = "STRING", mode = "REQUIRED" },
     { name = "event_time", type = "TIMESTAMP", mode = "NULLABLE" },
-    { name = "event_type", type = "STRING",    mode = "NULLABLE" },
-    { name = "payload",    type = "STRING",    mode = "NULLABLE", description = "raw JSON" }
+    { name = "event_type", type = "STRING", mode = "NULLABLE" },
+    { name = "payload", type = "STRING", mode = "NULLABLE", description = "raw JSON" }
   ])
 }
 
@@ -90,7 +90,7 @@ resource "google_cloudbuild_trigger" "app" {
   github {
     owner = var.repo_owner
     name  = var.repo_name
-    push  { branch = "^main$" }
+    push { branch = "^main$" }
   }
 
   substitutions = {
