@@ -1,0 +1,46 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: "E2_HIGHCPU_8"
+substitutions:
+  _TF_DIR: "infra"            # path to your TF code
+  _TF_PLAN_FILE: "plan.tfplan"
+  _TF_PLAN_TXT: "plan.txt"
+
+steps:
+  # Cache .terraform across builds (optional)
+  - name: gcr.io/cloud-builders/gsutil
+    id: "warm-cache"
+    entrypoint: "bash"
+    args:
+      - -c
+      - |
+        mkdir -p /workspace/${_TF_DIR}/.terraform
+
+  - name: hashicorp/terraform:1.7.5
+    id: "fmt"
+    dir: ${_TF_DIR}
+    args: ["fmt","-check","-recursive"]
+
+  - name: hashicorp/terraform:1.7.5
+    id: "init"
+    dir: ${_TF_DIR}
+    args: ["init","-input=false"]
+
+  - name: hashicorp/terraform:1.7.5
+    id: "validate"
+    dir: ${_TF_DIR}
+    args: ["validate","-no-color"]
+
+  - name: hashicorp/terraform:1.7.5
+    id: "plan"
+    dir: ${_TF_DIR}
+    args: ["plan","-no-color","-input=false","-out=${_TF_PLAN_FILE}"]
+
+  - name: hashicorp/terraform:1.7.5
+    id: "render-plan"
+    dir: ${_TF_DIR}
+    entrypoint: "bash"
+    args:
+      - -lc
+      - |
+        terraform show -no-color ${_TF_PLAN_FILE} > ${_TF_PLAN_TXT}

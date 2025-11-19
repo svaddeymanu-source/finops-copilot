@@ -1,0 +1,24 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: "E2_HIGHCPU_8"
+
+substitutions:
+  _APP_DIR: "app"
+
+steps:
+  - name: python:3.11
+    id: "install"
+    dir: ${_APP_DIR}
+    entrypoint: bash
+    args:
+      - -lc
+      - |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        if [ -f tests/requirements.txt ]; then pip install -r tests/requirements.txt; fi
+
+  - name: python:3.11
+    id: "pytest"
+    dir: ${_APP_DIR}
+    entrypoint: bash
+    args: ["-lc","pytest -q --maxfail=1 --disable-warnings"]

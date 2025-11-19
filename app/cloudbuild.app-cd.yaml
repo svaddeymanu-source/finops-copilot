@@ -1,0 +1,51 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: "E2_HIGHCPU_8"
+
+substitutions:
+  _APP_DIR: "app"
+  _REGION: "us-central1"
+  _AR_REPO: "finops-app"                       # Artifact Registry repo (Docker)
+  _SERVICE_NAME: "finops-controller"           # Cloud Run service name
+  _RUNTIME_SA_EMAIL: "finops-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
+
+  # App config (non-secret)
+  _BQ_DATASET: "finops_curated"
+  _BQ_ALERTS_TABLE: "cur_alerts"
+
+  # Secret Manager: Slack webhook secret name (no version here)
+  _SLACK_SECRET_NAME: "finops-slack-webhook"
+
+  # Image tag
+  _IMAGE: "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
+
+steps:
+  # Build image
+  - name: gcr.io/cloud-builders/docker
+    id: "build-image"
+    dir: ${_APP_DIR}
+    args: ["build","-t","${_IMAGE}","-f","Dockerfile","."]
+
+  # Push image
+  - name: gcr.io/cloud-builders/docker
+    id: "push-image"
+    args: ["push","${_IMAGE}"]
+
+  # Deploy to Cloud Run, injecting Secret Manager secret as env
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "deploy-run"
+    entrypoint: bash
+    args:
+      - -lc
+      - |
+        gcloud run deploy ${_SERVICE_NAME} \
+          --image ${_IMAGE} \
+          --region ${_REGION} \
+          --platform managed \
+          --allow-unauthenticated=false \
+          --service-account ${_RUNTIME_SA_EMAIL} \
+          --set-env-vars BQ_DATASET=${_BQ_DATASET},BQ_ALERTS_TABLE=${_BQ_ALERTS_TABLE} \
+          --set-secrets SLACK_WEBHOOK=${_SLACK_SECRET_NAME}:latest
+
+images:
+  - ${_IMAGE}
