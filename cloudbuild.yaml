@@ -1,4 +1,35 @@
+options: { logging: CLOUD_LOGGING_ONLY, substitutionOption: ALLOW_LOOSE }
+substitutions:
+  _SERVICE_NAME: ${_SERVICE_NAME}
+  _REGION: ${_REGION}
+  _AR_REPO: ${_AR_REPO}
+  _RUNTIME_SA_EMAIL: ${_RUNTIME_SA_EMAIL}
+  _BQ_DATASET: ${_BQ_DATASET}
+  _BQ_ALERTS_TABLE: ${_BQ_ALERTS_TABLE}
+
 steps:
-- name: gcr.io/cloud-builders/bash
-  entrypoint: bash
-  args: ['-c', 'echo "Cloud Build wired for $PROJECT_ID on commit $COMMIT_SHA"']
+- id: "Build container"
+  name: gcr.io/cloud-builders/docker
+  dir: app
+  args:
+    ["build","-t","${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE_NAME}:$SHORT_SHA","."]
+
+- id: "Push image"
+  name: gcr.io/cloud-builders/docker
+  args: ["push","${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE_NAME}:$SHORT_SHA"]
+
+- id: "Deploy to Cloud Run"
+  name: gcr.io/google.com/cloudsdktool/cloud-sdk
+  entrypoint: gcloud
+  args:
+    ["run","deploy","${_SERVICE_NAME}",
+     "--image","${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE_NAME}:$SHORT_SHA",
+     "--region","${_REGION}",
+     "--service-account","${_RUNTIME_SA_EMAIL}",
+     "--no-allow-unauthenticated",
+     "--platform","managed",
+     "--max-instances","3",
+     "--set-env-vars","BQ_DATASET=${_BQ_DATASET},BQ_ALERTS_TABLE=${_BQ_ALERTS_TABLE}"]
+
+images:
+- "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE_NAME}:$SHORT_SHA"
