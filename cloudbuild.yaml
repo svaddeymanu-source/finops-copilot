@@ -1,0 +1,4 @@
+steps:
+- name: gcr.io/cloud-builders/bash
+  entrypoint: bash
+  args: ['-c', 'echo "Cloud Build wired for $PROJECT_ID on commit $COMMIT_SHA"']
