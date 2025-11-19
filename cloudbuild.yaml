@@ -1,11 +1,11 @@
 options: { logging: CLOUD_LOGGING_ONLY, substitutionOption: ALLOW_LOOSE }
 substitutions:
-  _SERVICE_NAME: ${_SERVICE_NAME}
-  _REGION: ${_REGION}
-  _AR_REPO: ${_AR_REPO}
-  _RUNTIME_SA_EMAIL: ${_RUNTIME_SA_EMAIL}
-  _BQ_DATASET: ${_BQ_DATASET}
-  _BQ_ALERTS_TABLE: ${_BQ_ALERTS_TABLE}
+  _SERVICE_NAME: finops-controller
+  _REGION: us-central1
+  _AR_REPO: finops-app
+  _RUNTIME_SA_EMAIL: finops-runtime@${PROJECT_ID}.iam.gserviceaccount.com
+  _BQ_DATASET: finops_curated
+  _BQ_ALERTS_TABLE: cur_alerts
 
 steps:
 - id: "Build container"
