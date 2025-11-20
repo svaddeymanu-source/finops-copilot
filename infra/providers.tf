@@ -15,4 +15,6 @@ provider "google-beta" {
   region  = var.region
 }
 
-data "google_project" "this" {}
+data "google_project" "this" {
+  project_id = var.project_id
+}
