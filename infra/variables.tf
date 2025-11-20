@@ -16,7 +16,7 @@ variable "service_name" {
 
 variable "ar_repo" {
   type    = string
-  default = ""
+  default = "finops-app"
 }
 
 variable "runtime_sa_name" {
@@ -33,4 +33,13 @@ variable "bq_table" {
   type    = string
   default = "cur_alerts"
 }
-
+# Image built by Cloud Build and passed in at apply time
+variable "image" { 
+  type = string 
+  default = ""
+}
+# Secrets you want to mount into Cloud Run (example: Slack webhook)
+variable "slack_secret_name" { 
+  type = string 
+  default = "finops-slack-webhook" 
+}
