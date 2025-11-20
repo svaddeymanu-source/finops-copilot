@@ -80,17 +80,23 @@ resource "google_secret_manager_secret_iam_member" "runtime_slack_access" {
 }
 
 # Cloud Build SA
-locals { cloud_build_sa = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com" }
-
-resource "google_project_iam_member" "cb_ar_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${local.cloud_build_sa}"
+locals {
+  cloud_build_sa = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com"
+  cb_roles = toset([
+    "roles/serviceusage.serviceUsageAdmin",
+    "roles/resourcemanager.projectIamAdmin",
+    "roles/artifactregistry.admin",
+    "roles/run.admin",
+    "roles/iam.serviceAccountAdmin",
+    "roles/secretmanager.admin",
+  ])
 }
 
-resource "google_project_iam_member" "cb_run_admin" {
+resource "google_project_iam_member" "cb_roles" {
+  for_each = local.cb_roles
+
   project = var.project_id
-  role    = "roles/run.admin"
+  role    = each.value
   member  = "serviceAccount:${local.cloud_build_sa}"
 }
 
