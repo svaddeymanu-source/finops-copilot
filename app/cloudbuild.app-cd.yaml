@@ -31,21 +31,19 @@ steps:
     id: "push-image"
     args: ["push","${_IMAGE}"]
 
-  # Deploy to Cloud Run, injecting Secret Manager secret as env
-  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    id: "deploy-run"
-    entrypoint: bash
+  - name: hashicorp/terraform:1.7.5
+    id: tf-apply-cloud-run
+    dir: infra
+    entrypoint: sh
     args:
       - -lc
       - |
-        gcloud run deploy ${_SERVICE_NAME} \
-          --image ${_IMAGE} \
-          --region ${_REGION} \
-          --platform managed \
-          --no-allow-unauthenticated \
-          --service-account ${_RUNTIME_SA_EMAIL} \
-          --set-env-vars BQ_DATASET=${_BQ_DATASET},BQ_ALERTS_TABLE=${_BQ_ALERTS_TABLE} \
-          --set-secrets SLACK_WEBHOOK=${_SLACK_SECRET_NAME}:latest
+        terraform init -input=false
+        terraform apply -auto-approve \
+          -var="project_id=$PROJECT_ID" \
+          -var="region=${_REGION}" \
+          -var="service_name=${_SERVICE_NAME}" \
+          -var="image=us-central1-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
 
 images:
   - ${_IMAGE}

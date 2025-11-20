@@ -28,13 +28,6 @@ resource "google_artifact_registry_repository" "repo" {
   depends_on    = [google_project_service.apis]
 }
 
-# Runtime SA
-resource "google_service_account" "runtime" {
-  project      = var.project_id
-  account_id   = var.runtime_sa_name
-  display_name = "FinOps runtime SA"
-}
-
 # BigQuery
 resource "google_bigquery_dataset" "ds" {
   dataset_id  = var.bq_dataset
@@ -54,17 +47,36 @@ resource "google_bigquery_table" "alerts" {
   ])
 }
 
-# Runtime SA permissions (BQ read/write; Run reads secrets/metadata handled by env)
-resource "google_project_iam_member" "runtime_bq_editor" {
+# Runtime SA
+resource "google_service_account" "runtime" {
+  project      = var.project_id
+  account_id   = var.runtime_sa_name
+  display_name = "FinOps runtime SA"
+}
+
+# Runtime SA permissions (BQ read/write; Artifact Registry read)
+locals {
+  runtime_roles = [
+    "roles/bigquery.dataEditor",
+    "roles/bigquery.user",
+    "roles/artifactregistry.reader",
+  ]
+}
+
+resource "google_project_iam_member" "runtime_roles" {
+  for_each = toset(local.runtime_roles)
+
   project = var.project_id
-  role    = "roles/bigquery.dataEditor"
+  role    = each.value
   member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 
-resource "google_project_iam_member" "runtime_bq_user" {
-  project = var.project_id
-  role    = "roles/bigquery.user"
-  member  = "serviceAccount:${google_service_account.runtime.email}"
+# Allow runtime SA to read the Slack secret
+resource "google_secret_manager_secret_iam_member" "runtime_slack_access" {
+  project   = var.project_id
+  secret_id = var.slack_secret_name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.runtime.email}"
 }
 
 # Cloud Build SA
@@ -88,35 +100,44 @@ resource "google_service_account_iam_member" "cb_impersonate_runtime" {
   member             = "serviceAccount:${local.cloud_build_sa}"
 }
 
-# # Cloud Build trigger (GitHub App connection assumed)
-# resource "google_cloudbuild_trigger" "app" {
-#   name        = "finops-app-deploy"
-#   description = "Build from app/ and deploy to Cloud Run"
-#   filename    = "cloudbuild.yaml"
-#   project     = var.project_id
+resource "google_cloud_run_service" "controller" {
+  name     = var.service_name
+  project  = var.project_id
+  location = var.region
 
-#   github {
-#     owner = var.repo_owner
-#     name  = var.repo_name
-#     push { branch = "^main$" }
-#   }
+  template {
+    spec {
+      service_account_name = google_service_account.runtime.email
 
-#   substitutions = {
-#     _SERVICE_NAME     = var.service_name
-#     _REGION           = var.region
-#     _AR_REPO          = var.ar_repo
-#     _RUNTIME_SA_EMAIL = google_service_account.runtime.email
-#     _BQ_DATASET       = var.bq_dataset
-#     _BQ_ALERTS_TABLE  = var.bq_table
-#   }
+      containers {
+        image = var.image
 
-#   depends_on = [
-#     google_project_service.apis,
-#     google_artifact_registry_repository.repo,
-#     google_service_account.runtime,
-#     google_project_iam_member.cb_ar_writer,
-#     google_project_iam_member.cb_run_admin,
-#     google_service_account_iam_member.cb_impersonate_runtime
-#   ]
-# }
+        # Example: mount Slack webhook from Secret Manager into env var
+        env {
+          name = "SLACK_WEBHOOK_URL"
+          value_from {
+            secret_key_ref {
+              key  = "latest"
+              name = var.slack_secret_name
+            }
+          }
+        }
 
+        # If your app listens on 8080, Cloud Run detects it automatically.
+        # Add ports { name = "http1" container_port = 8080 } only if needed.
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+  autogenerate_revision_name = true
+
+  depends_on = [
+    google_project_iam_member.runtime_roles,
+    google_secret_manager_secret_iam_member.runtime_slack_access
+  ]
+}
