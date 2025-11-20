@@ -16,7 +16,7 @@ variable "service_name" {
 
 variable "ar_repo" {
   type    = string
-  default = "containers"
+  default = ""
 }
 
 variable "runtime_sa_name" {
