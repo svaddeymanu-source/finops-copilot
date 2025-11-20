@@ -5,7 +5,7 @@ options:
 substitutions:
   _APP_DIR: "app"
   _REGION: "us-central1"
-  _AR_REPO: "containers"                       # Artifact Registry repo (Docker)
+  _AR_REPO: "finops-app"                       # Artifact Registry repo (Docker)
   _SERVICE_NAME: "finops-controller"           # Cloud Run service name
   _RUNTIME_SA_EMAIL: "finops-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
 
