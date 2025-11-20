@@ -7,7 +7,7 @@ variable "region" {
 
 variable "repo_owner" { type = string } # GitHub org/user
 
-variable "repo_name"  { type = string } # GitHub repo
+variable "repo_name" { type = string } # GitHub repo
 
 variable "service_name" {
   type    = string

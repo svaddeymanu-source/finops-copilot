@@ -1,0 +1,32 @@
+substitutions:
+  _TF_BUCKET: tfstate-optical-office-475814-t3-prod        # the GCS bucket you just created
+  _TF_PREFIX: finops-copilot-state                     # any prefix you like
+  _PROJECT_ID: optical-office-475814-t3                # your project id
+  _REPO_OWNER: svaddeymanu-source                      # your GitHub org/user
+  _REPO_NAME: finops-copilot                           # repo name
+  _TF_DIR: "infra"
+  _TF_PLAN_FILE: "plan.tfplan"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: "E2_HIGHCPU_8"
+
+
+# If you prefer Cloud Build "Approvals" UI, enable it on the trigger.
+# (In the trigger, check "Require approval".)
+
+steps:
+  - name: hashicorp/terraform:1.7.5
+    id: "init"
+    dir: ${_TF_DIR}
+    args: ["init","-input=false"]
+
+  - name: hashicorp/terraform:1.7.5
+    id: "plan"
+    dir: ${_TF_DIR}
+    args: ["plan","-no-color","-input=false","-out=${_TF_PLAN_FILE}"]
+
+  - name: hashicorp/terraform:1.7.5
+    id: "apply"
+    dir: ${_TF_DIR}
+    args: ["apply","-input=false","-auto-approve","${_TF_PLAN_FILE}"]
