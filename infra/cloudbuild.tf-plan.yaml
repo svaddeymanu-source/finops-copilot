@@ -40,10 +40,11 @@ steps:
     args: ["plan","-no-color","-input=false","-out=${_TF_PLAN_FILE}"]
 
   - name: hashicorp/terraform:1.7.5
-    id: "render-plan"
+    id: render-plan
     dir: ${_TF_DIR}
-    entrypoint: "bash"
+    entrypoint: sh
     args:
       - -lc
       - |
-        terraform show -no-color ${_TF_PLAN_FILE} > ${_TF_PLAN_TXT}
+        echo "---- Terraform plan (human readable) ----"
+        terraform show -no-color ${_TF_PLAN_FILE}
