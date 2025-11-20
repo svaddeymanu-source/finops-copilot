@@ -42,7 +42,7 @@ steps:
           --image ${_IMAGE} \
           --region ${_REGION} \
           --platform managed \
-          --allow-unauthenticated=false \
+          --no-allow-unauthenticated \
           --service-account ${_RUNTIME_SA_EMAIL} \
           --set-env-vars BQ_DATASET=${_BQ_DATASET},BQ_ALERTS_TABLE=${_BQ_ALERTS_TABLE} \
           --set-secrets SLACK_WEBHOOK=${_SLACK_SECRET_NAME}:latest
