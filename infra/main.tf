@@ -71,10 +71,19 @@ resource "google_project_iam_member" "runtime_roles" {
   member  = "serviceAccount:${google_service_account.runtime.email}"
 }
 
-# Allow runtime SA to read the Slack secret
-resource "google_secret_manager_secret_iam_member" "runtime_slack_access" {
+# Slack webhook secret
+resource "google_secret_manager_secret" "slack_webhook" {
   project   = var.project_id
   secret_id = var.slack_secret_name
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_iam_member" "runtime_slack_access" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.slack_webhook.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.runtime.email}"
 }
@@ -147,3 +156,4 @@ resource "google_cloud_run_service" "controller" {
     google_secret_manager_secret_iam_member.runtime_slack_access
   ]
 }
+
