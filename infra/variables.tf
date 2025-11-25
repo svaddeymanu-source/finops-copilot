@@ -36,11 +36,14 @@ variable "bq_table" {
 # Image built by Cloud Build and passed in at apply time
 variable "controller_image" {
   type        = string
-  description = "Full controller image (tag or digest). Leave empty to use fallback."
   default     = ""
-  #nullable    = true
-}
+  description = "Full image (tag or digest). Empty -> fallback to :latest."
 
+  validation {
+    condition     = length(var.controller_image) == 0 || can(regex("^.+/(.+):.+|^.+@sha256:.+$", var.controller_image))
+    error_message = "controller_image must be empty, or a full tag (…/repo/name:tag) or a digest (…/repo/name@sha256:...)."
+  }
+}
 # Secrets you want to mount into Cloud Run (example: Slack webhook)
 variable "slack_secret_name" { 
   type = string 
