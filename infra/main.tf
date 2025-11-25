@@ -116,17 +116,12 @@ resource "google_service_account_iam_member" "cb_impersonate_runtime" {
 }
 
 locals {
-  # Fallback image if nothing is supplied by the pipeline
   fallback_image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.ar_repo}/${var.service_name}:latest"
-
-  # Normalize inputs to trimmed strings
-  _img_raw = trimspace(var.controller_image)
-  _url_raw = trimspace(var.controller_url)
-
-  # Final values: use input when non-empty, otherwise fallback
-  effective_controller_image = length(local._img_raw) > 0 ? local._img_raw : local.fallback_image
-  effective_controller_url   = length(local._url_raw) > 0 ? local._url_raw : google_cloud_run_service.controller.status[0].url
+  effective_controller_image = (
+    var.controller_image != null && trimspace(var.controller_image) != ""
+  ) ? var.controller_image : local.fallback_image
 }
+
 
 resource "google_cloud_run_service" "controller" {
   name     = var.service_name
