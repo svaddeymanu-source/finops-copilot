@@ -116,16 +116,10 @@ resource "google_service_account_iam_member" "cb_impersonate_runtime" {
 }
 
 locals {
-  # Fallback image if nothing is supplied by the pipeline
+  # If controller_image is empty, use the :latest tag as a fallback
   fallback_image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.ar_repo}/${var.service_name}:latest"
 
-  # Normalize inputs to trimmed strings
-  _img_raw = trimspace(var.controller_image)
-  _url_raw = trimspace(var.controller_url)
-
-  # Final values: use input when non-empty, otherwise fallback
-  effective_controller_image = length(local._img_raw) > 0 ? local._img_raw : local.fallback_image
-  effective_controller_url   = length(local._url_raw) > 0 ? local._url_raw : google_cloud_run_service.controller.status[0].url
+  effective_controller_image = length(trimspace(var.controller_image)) > 0 ? trimspace(var.controller_image) : local.fallback_image
 }
 
 resource "google_cloud_run_service" "controller" {
@@ -180,6 +174,9 @@ resource "google_pubsub_topic" "budgets" {
 resource "google_service_account" "push" {
   account_id   = "finops-push"
   display_name = "FinOps Pub/Sub Push SA"
+}
+locals {
+  effective_controller_url = length(trimspace(var.controller_url)) > 0 ? trimspace(var.controller_url) : google_cloud_run_service.controller.status[0].url
 }
 
 # Allow the push SA to invoke Cloud Run
