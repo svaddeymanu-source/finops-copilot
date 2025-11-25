@@ -36,14 +36,11 @@ variable "bq_table" {
 # Image built by Cloud Build and passed in at apply time
 variable "controller_image" {
   type        = string
-  description = "Fully-qualified image with digest for Cloud Run (e.g. us-central1-docker.pkg.dev/PROJECT/finops-app/finops-controller@sha256:...)"
-  nullable = true
-  default  = null
-  # validation {
-  #   condition     = length(var.controller_image) > 0 && can(regex("@sha256:", var.controller_image))
-  #   error_message = "controller_image must be a non-empty image URI with a digest (…@sha256:<digest>)."
-  # }
+  description = "Full controller image (tag or digest). Leave empty to use fallback."
+  default     = ""
+  nullable    = true
 }
+
 # Secrets you want to mount into Cloud Run (example: Slack webhook)
 variable "slack_secret_name" { 
   type = string 
@@ -52,6 +49,7 @@ variable "slack_secret_name" {
 
 variable "controller_url" {
   type        = string
-  default     = null
-  description = ""
+  description = "Override Cloud Run URL for Pub/Sub push endpoint. Leave empty to use the service URL."
+  default     = ""
+  nullable    = true
 }
