@@ -19,41 +19,52 @@ substitutions:
   _SLACK_SECRET_NAME: "finops-slack-webhook"
 
   # Image tag
-  _IMAGE: "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
+  _IMAGE_TAG: "${SHORT_SHA}"
 
 steps:
 # 0) build
+steps:
 - name: gcr.io/cloud-builders/docker
-  id: "build-image"
+  id: build-image
   args:
-    - "build"
-    - "-t"
-    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/finops-controller:${SHORT_SHA}"
-    - "app"
+    - build
+    - -t
+    - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${_IMAGE_TAG}
+    - ${_APP_DIR}
 
 # 1) push
 - name: gcr.io/cloud-builders/docker
-  id: "push-image"
+  id: push-image
   args:
-    - "push"
-    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/finops-controller:${SHORT_SHA}"
+    - push
+    - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${_IMAGE_TAG}
 
-# 2) resolve DIGEST and trigger infra-apply (passing the image)
+# 2) resolve digest and trigger infra-apply
 - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-  id: "trigger-infra-apply"
+  id: trigger-infra-apply
   entrypoint: bash
   args:
-    - -c
+    - -lc
     - |
       set -euo pipefail
-      # Build the tag you just pushed (adjust if you tag differently)
-      IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/finops-app/finops-controller:${SHORT_SHA}"
-      # Get the digest of that tag
-      DIGEST="$(gcloud artifacts docker images describe "$IMAGE" --format='get(image_summary.digest)')"
-      FULL_IMAGE="${IMAGE%@*}@${DIGEST}"
 
-      # Trigger infra-apply and pass the image to Terraform
-      gcloud builds triggers run "$_INFRA_APPLY_TRIGGER_ID" \
+      # base repo (no tag, no digest)
+      IMG_REPO="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}"
+      TAG="${_IMAGE_TAG}"
+
+      # get the digest for the tag we just pushed
+      DIGEST="$(gcloud artifacts docker images describe "${IMG_REPO}:${TAG}" \
+        --format='value(image_summary.digest)')"
+
+      if [[ -z "${DIGEST}" ]]; then
+        echo "Failed to resolve image digest for ${IMG_REPO}:${TAG}" >&2
+        exit 1
+      fi
+
+      FULL_IMAGE="${IMG_REPO}@${DIGEST}"
+      echo "Resolved controller image: ${FULL_IMAGE}"
+
+      # trigger infra-apply and pass image to Terraform
+      gcloud builds triggers run "${_INFRA_APPLY_TRIGGER_ID}" \
         --branch=main \
-        --substitutions=_CONTROLLER_IMAGE="$FULL_IMAGE"
-        
+        --substitutions=_CONTROLLER_IMAGE="${FULL_IMAGE}"
