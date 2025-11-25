@@ -31,19 +31,42 @@ steps:
     id: "push-image"
     args: ["push","${_IMAGE}"]
 
-  - name: hashicorp/terraform:1.7.5
-    id: tf-apply-cloud-run
-    dir: infra
-    entrypoint: sh
+  # STEP: compute FULL_IMAGE with digest and trigger infra-apply
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "trigger-infra-apply"
+    entrypoint: bash
     args:
-      - -lc
+      - -c
       - |
-        terraform init -input=false
-        terraform apply -auto-approve \
-          -var="project_id=$PROJECT_ID" \
-          -var="region=${_REGION}" \
-          -var="service_name=${_SERVICE_NAME}" \
-          -var="image=us-central1-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
+        set -euo pipefail
+        IMAGE_PATH="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_IMAGE_NAME}"
+
+        # Get the digest of the image you just pushed (tagged with $SHORT_SHA)
+        DIGEST="$(gcloud artifacts docker images describe \
+          "${IMAGE_PATH}:${SHORT_SHA}" \
+          --format='get(image_summary.digest)')"
+
+        FULL_IMAGE="${IMAGE_PATH}@${DIGEST}"
+        echo "Will deploy: ${FULL_IMAGE}"
+
+        # Kick infra-apply and pass the image as a substitution
+        gcloud builds triggers run ${_INFRA_APPLY_TRIGGER_ID} \
+          --branch=main \
+          --substitutions=_CONTROLLER_IMAGE="${FULL_IMAGE}"
+
+  # - name: hashicorp/terraform:1.7.5
+  #   id: tf-apply-cloud-run
+  #   dir: infra
+  #   entrypoint: sh
+  #   args:
+  #     - -lc
+  #     - |
+  #       terraform init -input=false
+  #       terraform apply -auto-approve \
+  #         -var="project_id=$PROJECT_ID" \
+  #         -var="region=${_REGION}" \
+  #         -var="service_name=${_SERVICE_NAME}" \
+  #         -var="image=us-central1-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
 
 images:
   - ${_IMAGE}

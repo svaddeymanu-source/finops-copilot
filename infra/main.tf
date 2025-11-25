@@ -122,10 +122,10 @@ resource "google_cloud_run_service" "controller" {
 
   template {
     spec {
-      service_account_name = google_service_account.runtime.email
+      service_account_name = "${var.runtime_sa_name}@${var.project_id}.iam.gserviceaccount.com"
 
       containers {
-        image = var.image
+        image = var.controller_image
 
         # Example: mount Slack webhook from Secret Manager into env var
         env {

@@ -34,9 +34,9 @@ variable "bq_table" {
   default = "cur_alerts"
 }
 # Image built by Cloud Build and passed in at apply time
-variable "image" { 
+variable "controller_image" { 
   type = string 
-  default = ""
+  default = "e.g. us-central1-docker.pkg.dev/PROJECT/REPO/finops-controller@sha256:ABC..."
 }
 # Secrets you want to mount into Cloud Run (example: Slack webhook)
 variable "slack_secret_name" { 
