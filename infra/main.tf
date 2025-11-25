@@ -105,7 +105,7 @@ resource "google_project_iam_member" "cb_roles" {
   for_each = local.cb_roles
 
   project = var.project_id
-  role    = each.key
+  role    = each.value
   member  = "serviceAccount:${local.cloud_build_sa}"
 }
 
@@ -115,9 +115,7 @@ resource "google_service_account_iam_member" "cb_impersonate_runtime" {
   member             = "serviceAccount:${local.cloud_build_sa}"
 }
 
-locals {
-  fallback_image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.ar_repo}/${var.service_name}:latest"
-}
+
 resource "google_cloud_run_service" "controller" {
   name     = var.service_name
   project  = var.project_id
@@ -128,7 +126,7 @@ resource "google_cloud_run_service" "controller" {
       service_account_name = "${var.runtime_sa_name}@${var.project_id}.iam.gserviceaccount.com"
 
       containers {
-        image = coalesce(var.controller_image, local.fallback_image)
+        image = var.controller_image
 
         # Example: mount Slack webhook from Secret Manager into env var
         env {
@@ -187,7 +185,7 @@ locals {
     var.controller_url != null && var.controller_url != ""
   ) ? var.controller_url : google_cloud_run_service.controller.status[0].url
 }
-# === Pub/Sub: push subscription with OIDC to Cloud Run ===
+
 resource "google_pubsub_subscription" "budgets_to_controller" {
   name    = "budgets-to-controller"
   project = var.project_id
@@ -195,10 +193,10 @@ resource "google_pubsub_subscription" "budgets_to_controller" {
   ack_deadline_seconds = 20
 
   push_config {
-    push_endpoint = var.controller_url           # set this var to your Cloud Run HTTPS URL
+    push_endpoint = local.controller_url
     oidc_token {
       service_account_email = google_service_account.push.email
-      audience              = local.controller_url # Cloud Run URL as audience
+      audience              = local.controller_url
     }
   }
 }

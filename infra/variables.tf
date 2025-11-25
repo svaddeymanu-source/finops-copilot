@@ -37,7 +37,7 @@ variable "bq_table" {
 variable "controller_image" {
   type        = string
   description = "Fully-qualified image with digest for Cloud Run (e.g. us-central1-docker.pkg.dev/PROJECT/finops-app/finops-controller@sha256:...)"
-  nullable = true
+  nullable = false
   default  = null
   # validation {
   #   condition     = length(var.controller_image) > 0 && can(regex("@sha256:", var.controller_image))

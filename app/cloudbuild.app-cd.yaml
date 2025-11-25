@@ -40,16 +40,20 @@ steps:
 
   # 2) resolve digest and trigger infra-apply
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    id: "trigger-infra-apply"
+    id: trigger-infra-apply
     entrypoint: bash
     args:
       - -c
       - |
         set -euo pipefail
-        IMAGE="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
-        DIGEST="$(gcloud artifacts docker images describe "$IMAGE" --format='get(image_summary.digest)')"
-        FULL_IMAGE="${IMAGE%@*}@${DIGEST}"
+
+        REPO_PATH="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}"
+        TAGGED_IMAGE="${REPO_PATH}:${_IMAGE_TAG}"
+
+        DIGEST="$(gcloud artifacts docker images describe "$TAGGED_IMAGE" --format='value(image_summary.digest)')"
+        FULL_IMAGE="${REPO_PATH}@${DIGEST}"
         echo "Using controller image: $FULL_IMAGE"
+
         gcloud builds triggers run "$_INFRA_APPLY_TRIGGER_ID" \
           --branch=main \
           --substitutions=_CONTROLLER_IMAGE="$FULL_IMAGE"
