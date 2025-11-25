@@ -35,4 +35,8 @@ steps:
 - name: hashicorp/terraform:1.7.5
   id: "apply"
   dir: ${_TF_DIR}
-  args: ["apply", "-input=false", "-auto-approve", "-var=controller_image=${_CONTROLLER_IMAGE}"]
+  args: [
+    "apply","-input=false","-auto-approve",
+    "-var=controller_image=${_CONTROLLER_IMAGE}",
+    "${_TF_PLAN_FILE}"
+  ]

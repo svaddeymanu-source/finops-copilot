@@ -19,40 +19,37 @@ substitutions:
   _SLACK_SECRET_NAME: "finops-slack-webhook"
 
   # Image tag
-  _IMAGE: "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
+  _IMAGE_TAG: "${SHORT_SHA}"
 
 steps:
-# 0) build
-- name: gcr.io/cloud-builders/docker
-  id: "build-image"
-  args:
-    - "build"
-    - "-t"
-    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/finops-controller:${SHORT_SHA}"
-    - "app"
+  # 0) build
+  - name: gcr.io/cloud-builders/docker
+    id: build-image
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${_IMAGE_TAG}
+      - ${_APP_DIR}
 
-# 1) push
-- name: gcr.io/cloud-builders/docker
-  id: "push-image"
-  args:
-    - "push"
-    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/finops-controller:${SHORT_SHA}"
+  # 1) push
+  - name: gcr.io/cloud-builders/docker
+    id: push-image
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${_IMAGE_TAG}
 
-# 2) resolve DIGEST and trigger infra-apply (passing the image)
-- name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-  id: "trigger-infra-apply"
-  entrypoint: bash
-  args:
-    - -lc
-    - |
-      IMAGE_TAG="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/finops-controller:${SHORT_SHA}"
-      FULL_IMAGE=$(gcloud artifacts docker images describe "$IMAGE_TAG" \
-        --project="${PROJECT_ID}" \
-        --format='value(image_summary.fully_qualified_digest)')
-      echo "Resolved: $FULL_IMAGE"
-
-      gcloud builds triggers run "${_INFRA_APPLY_TRIGGER_ID}" \
-        --project="${PROJECT_ID}" \
-        --branch=main \
-        --substitutions=_CONTROLLER_IMAGE="${FULL_IMAGE}"
-        
+  # 2) resolve digest and trigger infra-apply
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    id: "trigger-infra-apply"
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMAGE="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
+        DIGEST="$(gcloud artifacts docker images describe "$IMAGE" --format='get(image_summary.digest)')"
+        FULL_IMAGE="${IMAGE%@*}@${DIGEST}"
+        echo "Using controller image: $FULL_IMAGE"
+        gcloud builds triggers run "$_INFRA_APPLY_TRIGGER_ID" \
+          --branch=main \
+          --substitutions=_CONTROLLER_IMAGE="$FULL_IMAGE"

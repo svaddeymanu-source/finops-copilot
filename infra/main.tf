@@ -115,7 +115,9 @@ resource "google_service_account_iam_member" "cb_impersonate_runtime" {
   member             = "serviceAccount:${local.cloud_build_sa}"
 }
 
-
+locals {
+  fallback_image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.ar_repo}/${var.service_name}:latest"
+}
 resource "google_cloud_run_service" "controller" {
   name     = var.service_name
   project  = var.project_id
@@ -126,7 +128,7 @@ resource "google_cloud_run_service" "controller" {
       service_account_name = "${var.runtime_sa_name}@${var.project_id}.iam.gserviceaccount.com"
 
       containers {
-        image = var.controller_image
+        image = coalesce(var.controller_image, local.fallback_image)
 
         # Example: mount Slack webhook from Secret Manager into env var
         env {
