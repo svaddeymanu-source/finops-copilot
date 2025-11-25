@@ -37,7 +37,7 @@ variable "bq_table" {
 variable "controller_image" {
   type        = string
   description = "Full controller image (tag or digest). Leave empty to use fallback."
-  default     = null
+  default     = ""
   nullable    = true
 }
 
@@ -50,6 +50,6 @@ variable "slack_secret_name" {
 variable "controller_url" {
   type        = string
   description = "Override Cloud Run URL for Pub/Sub push endpoint. Leave empty to use the service URL."
-  default     = null
+  default     = ""
   nullable    = true
 }
