@@ -115,7 +115,15 @@ resource "google_service_account_iam_member" "cb_impersonate_runtime" {
   member             = "serviceAccount:${local.cloud_build_sa}"
 }
 
+locals {
+  fallback_image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.ar_repo}/${var.service_name}:latest"
 
+  # Prefer the incoming var when it's non-empty; otherwise use fallback.
+  effective_controller_image = trim(var.controller_image) != "" ? var.controller_image : local.fallback_image
+
+  # Prefer user-provided URL when non-empty; else use the service URL
+  effective_controller_url = trim(var.controller_url) != "" ? var.controller_url : google_cloud_run_service.controller.status[0].url
+}
 resource "google_cloud_run_service" "controller" {
   name     = var.service_name
   project  = var.project_id
@@ -126,7 +134,7 @@ resource "google_cloud_run_service" "controller" {
       service_account_name = "${var.runtime_sa_name}@${var.project_id}.iam.gserviceaccount.com"
 
       containers {
-        image = var.controller_image
+        image = local.effective_controller_image
 
         # Example: mount Slack webhook from Secret Manager into env var
         env {
@@ -193,10 +201,10 @@ resource "google_pubsub_subscription" "budgets_to_controller" {
   ack_deadline_seconds = 20
 
   push_config {
-    push_endpoint = local.controller_url
+    push_endpoint = local.effective_controller_url
     oidc_token {
       service_account_email = google_service_account.push.email
-      audience              = local.controller_url
+      audience              = local.effective_controller_url
     }
   }
 }
