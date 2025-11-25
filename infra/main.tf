@@ -188,11 +188,7 @@ resource "google_cloud_run_service_iam_member" "push_invoker" {
 }
 
 
-locals {
-  controller_url = (
-    var.controller_url != null && var.controller_url != ""
-  ) ? var.controller_url : google_cloud_run_service.controller.status[0].url
-}
+
 
 resource "google_pubsub_subscription" "budgets_to_controller" {
   name    = "budgets-to-controller"

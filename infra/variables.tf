@@ -36,9 +36,8 @@ variable "bq_table" {
 # Image built by Cloud Build and passed in at apply time
 variable "controller_image" {
   type        = string
-  description = "Full controller image (tag or digest)."
-  default     = null
-  nullable    = ""
+  description = "Full controller image (tag or digest). When empty, use fallback."
+  default     = ""
 }
 
 # Secrets you want to mount into Cloud Run (example: Slack webhook)
@@ -49,7 +48,6 @@ variable "slack_secret_name" {
 
 variable "controller_url" {
   type        = string
-  description = "Override Cloud Run URL for Pub/Sub push endpoint. Leave null to auto-use the service URL."
+  description = "Override Cloud Run URL for Pub/Sub push endpoint; leave empty to auto-detect."
   default     = ""
-  nullable    = true
 }
