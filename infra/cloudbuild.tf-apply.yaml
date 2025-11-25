@@ -1,26 +1,30 @@
-substitutions:
-  _TF_BUCKET: tfstate-optical-office-475814-t3-prod        # the GCS bucket you just created
-  _TF_PREFIX: finops-copilot-state                     # any prefix you like
-  _PROJECT_ID: optical-office-475814-t3                # your project id
-  _REPO_OWNER: svaddeymanu-source                      # your GitHub org/user
-  _REPO_NAME: finops-copilot                           # repo name
-  _TF_DIR: "infra"
-  _TF_PLAN_FILE: "plan.tfplan"
-  _CONTROLLER_IMAGE: ""
-
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: "E2_HIGHCPU_8"
 
+substitutions:
+  _TF_DIR: "infra"
+  _TF_PLAN_FILE: "plan.tfplan"
+  _TF_PLAN_TXT: "plan.txt"
+  _CONTROLLER_IMAGE: ""      # passed from the app CD pipeline
 
-# If you prefer Cloud Build "Approvals" UI, enable it on the trigger.
-# (In the trigger, check "Require approval".)
+  # (only needed if your backend uses these; otherwise safe to keep)
+  _TF_BUCKET: "tfstate-optical-office-475814-t3-prod"
+  _TF_PREFIX: "finops-copilot-state"
+  _PROJECT_ID: "optical-office-475814-t3"
+  _REPO_OWNER: "svaddeymanu-source"
+  _REPO_NAME: "finops-copilot"
 
 steps:
 - name: hashicorp/terraform:1.7.5
   id: "init"
   dir: ${_TF_DIR}
-  args: ["init", "-input=false"]
+  args: ["init","-input=false"]
+
+- name: hashicorp/terraform:1.7.5
+  id: "validate"
+  dir: ${_TF_DIR}
+  args: ["validate","-no-color"]
 
 - name: hashicorp/terraform:1.7.5
   id: "plan"
@@ -32,11 +36,27 @@ steps:
     - "-var=controller_image=${_CONTROLLER_IMAGE}"
     - "-out=${_TF_PLAN_FILE}"
 
+# Optional: keep for debugging/approvals review
+- name: hashicorp/terraform:1.7.5
+  id: "render-plan"
+  dir: ${_TF_DIR}
+  entrypoint: sh
+  args:
+    - -lc
+    - terraform show -no-color ${_TF_PLAN_FILE} > ${_TF_PLAN_TXT}
+
 - name: hashicorp/terraform:1.7.5
   id: "apply"
   dir: ${_TF_DIR}
-  args: [
-    "apply","-input=false","-auto-approve",
-    "-var=controller_image=${_CONTROLLER_IMAGE}",
-    "${_TF_PLAN_FILE}"
-  ]
+  args:
+    - "apply"
+    - "-input=false"
+    - "-auto-approve"
+    - "${_TF_PLAN_FILE}"
+
+artifacts:
+  objects:
+    location: "gs://$PROJECT_ID-tfstate/builds/${BUILD_ID}"
+    paths:
+      - "${_TF_DIR}/${_TF_PLAN_FILE}"
+      - "${_TF_DIR}/${_TF_PLAN_TXT}"
