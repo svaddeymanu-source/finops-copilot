@@ -43,16 +43,17 @@ steps:
   id: "trigger-infra-apply"
   entrypoint: bash
   args:
-    - -lc
+    - -c
     - |
-      IMAGE_TAG="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/finops-controller:${SHORT_SHA}"
-      FULL_IMAGE=$(gcloud artifacts docker images describe "$IMAGE_TAG" \
-        --project="${PROJECT_ID}" \
-        --format='value(image_summary.fully_qualified_digest)')
-      echo "Resolved: $FULL_IMAGE"
+      set -euo pipefail
+      # Build the tag you just pushed (adjust if you tag differently)
+      IMAGE="us-central1-docker.pkg.dev/$PROJECT_ID/finops-app/finops-controller:${SHORT_SHA}"
+      # Get the digest of that tag
+      DIGEST="$(gcloud artifacts docker images describe "$IMAGE" --format='get(image_summary.digest)')"
+      FULL_IMAGE="${IMAGE%@*}@${DIGEST}"
 
-      gcloud builds triggers run "${_INFRA_APPLY_TRIGGER_ID}" \
-        --project="${PROJECT_ID}" \
+      # Trigger infra-apply and pass the image to Terraform
+      gcloud builds triggers run "$_INFRA_APPLY_TRIGGER_ID" \
         --branch=main \
-        --substitutions=_CONTROLLER_IMAGE="${FULL_IMAGE}"
+        --substitutions=_CONTROLLER_IMAGE="$FULL_IMAGE"
         
