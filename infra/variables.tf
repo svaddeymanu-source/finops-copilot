@@ -36,10 +36,14 @@ variable "bq_table" {
 # Image built by Cloud Build and passed in at apply time
 variable "controller_image" { 
   type = string 
-  default = "e.g. us-central1-docker.pkg.dev/PROJECT/REPO/finops-controller@sha256:ABC..."
+  default = ""
 }
 # Secrets you want to mount into Cloud Run (example: Slack webhook)
 variable "slack_secret_name" { 
   type = string 
   default = "finops-slack-webhook" 
 }
+
+variable "controller_url" { 
+  type = string 
+  }  # Cloud Run URL, e.g. https://finops-controller-xxxxx-uc.a.run.app

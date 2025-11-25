@@ -105,7 +105,7 @@ resource "google_project_iam_member" "cb_roles" {
   for_each = local.cb_roles
 
   project = var.project_id
-  role    = each.value
+  role    = each.key
   member  = "serviceAccount:${local.cloud_build_sa}"
 }
 
@@ -157,3 +157,39 @@ resource "google_cloud_run_service" "controller" {
   ]
 }
 
+# === Pub/Sub: topic for budget alerts ===
+resource "google_pubsub_topic" "budgets" {
+  name    = "budgets-alerts"
+  project = var.project_id
+}
+
+# Service account used by the push subscription to call Cloud Run
+resource "google_service_account" "push" {
+  account_id   = "finops-push"
+  display_name = "FinOps Pub/Sub Push SA"
+}
+
+# Allow the push SA to invoke Cloud Run
+resource "google_cloud_run_service_iam_member" "push_invoker" {
+  project  = var.project_id
+  location = var.region
+  service  = var.service_name                     # e.g., "finops-controller"
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.push.email}"
+}
+
+# === Pub/Sub: push subscription with OIDC to Cloud Run ===
+resource "google_pubsub_subscription" "budgets_to_controller" {
+  name    = "budgets-to-controller"
+  project = var.project_id
+  topic   = google_pubsub_topic.budgets.name
+  ack_deadline_seconds = 20
+
+  push_config {
+    push_endpoint = var.controller_url           # set this var to your Cloud Run HTTPS URL
+    oidc_token {
+      service_account_email = google_service_account.push.email
+      audience              = var.controller_url # Cloud Run URL as audience
+    }
+  }
+}
