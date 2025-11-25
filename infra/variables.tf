@@ -38,7 +38,7 @@ variable "controller_image" {
   type        = string
   description = "Full controller image (tag or digest). Leave empty to use fallback."
   default     = ""
-  nullable    = true
+  #nullable    = true
 }
 
 # Secrets you want to mount into Cloud Run (example: Slack webhook)
@@ -51,5 +51,5 @@ variable "controller_url" {
   type        = string
   description = "Override Cloud Run URL for Pub/Sub push endpoint. Leave empty to use the service URL."
   default     = ""
-  nullable    = true
+  #nullable    = true
 }
