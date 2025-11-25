@@ -115,6 +115,7 @@ resource "google_service_account_iam_member" "cb_impersonate_runtime" {
   member             = "serviceAccount:${local.cloud_build_sa}"
 }
 
+
 resource "google_cloud_run_service" "controller" {
   name     = var.service_name
   project  = var.project_id
@@ -178,6 +179,12 @@ resource "google_cloud_run_service_iam_member" "push_invoker" {
   member   = "serviceAccount:${google_service_account.push.email}"
 }
 
+
+locals {
+  controller_url = (
+    var.controller_url != null && var.controller_url != ""
+  ) ? var.controller_url : google_cloud_run_service.controller.status[0].url
+}
 # === Pub/Sub: push subscription with OIDC to Cloud Run ===
 resource "google_pubsub_subscription" "budgets_to_controller" {
   name    = "budgets-to-controller"
@@ -189,7 +196,7 @@ resource "google_pubsub_subscription" "budgets_to_controller" {
     push_endpoint = var.controller_url           # set this var to your Cloud Run HTTPS URL
     oidc_token {
       service_account_email = google_service_account.push.email
-      audience              = var.controller_url # Cloud Run URL as audience
+      audience              = local.controller_url # Cloud Run URL as audience
     }
   }
 }

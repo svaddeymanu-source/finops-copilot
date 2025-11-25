@@ -44,6 +44,8 @@ variable "slack_secret_name" {
   default = "finops-slack-webhook" 
 }
 
-variable "controller_url" { 
-  type = string 
-  }  # Cloud Run URL, e.g. https://finops-controller-xxxxx-uc.a.run.app
+variable "controller_url" {
+  type        = string
+  default     = null
+  description = ""
+}
