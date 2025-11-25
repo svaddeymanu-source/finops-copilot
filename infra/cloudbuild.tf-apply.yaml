@@ -6,6 +6,7 @@ substitutions:
   _REPO_NAME: finops-copilot                           # repo name
   _TF_DIR: "infra"
   _TF_PLAN_FILE: "plan.tfplan"
+  _CONTROLLER_IMAGE: ""
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -16,17 +17,22 @@ options:
 # (In the trigger, check "Require approval".)
 
 steps:
-  - name: hashicorp/terraform:1.7.5
-    id: "init"
-    dir: ${_TF_DIR}
-    args: ["init","-input=false"]
+- name: hashicorp/terraform:1.7.5
+  id: "init"
+  dir: ${_TF_DIR}
+  args: ["init", "-input=false"]
 
-  - name: hashicorp/terraform:1.7.5
-    id: "plan"
-    dir: ${_TF_DIR}
-    args: ["plan","-no-color","-input=false","-out=${_TF_PLAN_FILE}"]
+- name: hashicorp/terraform:1.7.5
+  id: "plan"
+  dir: ${_TF_DIR}
+  args:
+    - "plan"
+    - "-no-color"
+    - "-input=false"
+    - "-var=controller_image=${_CONTROLLER_IMAGE}"
+    - "-out=${_TF_PLAN_FILE}"
 
-  - name: hashicorp/terraform:1.7.5
-    id: "apply"
-    dir: ${_TF_DIR}
-    args: ["apply","-input=false","-auto-approve","${_TF_PLAN_FILE}"]
+- name: hashicorp/terraform:1.7.5
+  id: "apply"
+  dir: ${_TF_DIR}
+  args: ["apply", "-input=false", "-auto-approve", "-var=controller_image=${_CONTROLLER_IMAGE}"]

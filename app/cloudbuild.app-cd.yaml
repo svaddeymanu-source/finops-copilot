@@ -6,7 +6,9 @@ substitutions:
   _APP_DIR: "app"
   _REGION: "us-central1"
   _AR_REPO: "finops-app"                       # Artifact Registry repo (Docker)
-  _SERVICE_NAME: "finops-controller"           # Cloud Run service name
+  _SERVICE_NAME: "finops-controller" 
+  _IMAGE_NAME: "finops-controller"
+  _INFRA_APPLY_TRIGGER_ID: "32968aa2-c552-4e70-b0e7-8da2d7db8b73"         # Cloud Run service name
   _RUNTIME_SA_EMAIL: "finops-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
 
   # App config (non-secret)
@@ -20,30 +22,37 @@ substitutions:
   _IMAGE: "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
 
 steps:
-  # Build image
-  - name: gcr.io/cloud-builders/docker
-    id: "build-image"
-    dir: ${_APP_DIR}
-    args: ["build","-t","${_IMAGE}","-f","Dockerfile","."]
+# 0) build
+- name: gcr.io/cloud-builders/docker
+  id: "build-image"
+  args:
+    - "build"
+    - "-t"
+    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/finops-controller:${SHORT_SHA}"
+    - "app"
 
-  # Push image
-  - name: gcr.io/cloud-builders/docker
-    id: "push-image"
-    args: ["push","${_IMAGE}"]
+# 1) push
+- name: gcr.io/cloud-builders/docker
+  id: "push-image"
+  args:
+    - "push"
+    - "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/finops-controller:${SHORT_SHA}"
 
-  - name: hashicorp/terraform:1.7.5
-    id: tf-apply-cloud-run
-    dir: infra
-    entrypoint: sh
-    args:
-      - -lc
-      - |
-        terraform init -input=false
-        terraform apply -auto-approve \
-          -var="project_id=$PROJECT_ID" \
-          -var="region=${_REGION}" \
-          -var="service_name=${_SERVICE_NAME}" \
-          -var="image=us-central1-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE_NAME}:${SHORT_SHA}"
+# 2) resolve DIGEST and trigger infra-apply (passing the image)
+- name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+  id: "trigger-infra-apply"
+  entrypoint: bash
+  args:
+    - -lc
+    - |
+      IMAGE_TAG="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/finops-controller:${SHORT_SHA}"
+      FULL_IMAGE=$(gcloud artifacts docker images describe "$IMAGE_TAG" \
+        --project="${PROJECT_ID}" \
+        --format='value(image_summary.fully_qualified_digest)')
+      echo "Resolved: $FULL_IMAGE"
 
-images:
-  - ${_IMAGE}
+      gcloud builds triggers run "${_INFRA_APPLY_TRIGGER_ID}" \
+        --project="${PROJECT_ID}" \
+        --branch=main \
+        --substitutions=_CONTROLLER_IMAGE="${FULL_IMAGE}"
+        

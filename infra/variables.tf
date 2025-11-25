@@ -34,7 +34,7 @@ variable "bq_table" {
   default = "cur_alerts"
 }
 # Image built by Cloud Build and passed in at apply time
-variable "image" { 
+variable "controller_image" { 
   type = string 
   default = ""
 }
@@ -42,4 +42,10 @@ variable "image" {
 variable "slack_secret_name" { 
   type = string 
   default = "finops-slack-webhook" 
+}
+
+variable "controller_url" {
+  type        = string
+  default     = null
+  description = ""
 }
