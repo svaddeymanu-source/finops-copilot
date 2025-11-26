@@ -148,6 +148,10 @@ resource "google_cloud_run_service" "controller" {
 
         #        env { name = "BQ_DATASET"      value = var.bq_dataset }
         env { 
+          name = "BQ_DATASET" 
+          value = var.bq_dataset 
+        }
+        env { 
           name = "BQ_ALERTS_TABLE" 
           value = var.bq_table  
         }
