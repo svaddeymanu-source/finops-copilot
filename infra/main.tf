@@ -213,3 +213,10 @@ resource "google_pubsub_subscription" "budgets_to_controller" {
     }
   }
 }
+
+resource "google_pubsub_topic_iam_member" "billing_publisher" {
+  project = var.project_id
+  topic   = google_pubsub_topic.budgets.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:billing-budget-notifications@system.gserviceaccount.com"
+}
