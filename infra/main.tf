@@ -146,8 +146,11 @@ resource "google_cloud_run_service" "controller" {
           }
         }
 
-        # If your app listens on 8080, Cloud Run detects it automatically.
-        # Add ports { name = "http1" container_port = 8080 } only if needed.
+        #        env { name = "BQ_DATASET"      value = var.bq_dataset }
+        env { 
+          name = "BQ_ALERTS_TABLE" 
+          value = var.bq_table  
+        }
       }
     }
   }
