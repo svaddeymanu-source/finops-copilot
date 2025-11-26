@@ -59,22 +59,16 @@ steps:
       - |
         set -euo pipefail
 
-
         REPO_PATH="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE_NAME}"
-
-
         TAGGED_IMAGE="$${REPO_PATH}:${_IMAGE_TAG}"
 
-        # Escape the $ for TAGGED_IMAGE when it's referenced as a shell variable.
         DIGEST="$(gcloud artifacts docker images describe "$$TAGGED_IMAGE" --format='value(image_summary.digest)')"
-
-        # Escape the $ for REPO_PATH and DIGEST when they are referenced as shell variables.
         FULL_IMAGE="$${REPO_PATH}@$${DIGEST}"
-        echo "Using controller image: $$FULL_IMAGE" # Escape $ for FULL_IMAGE as it's a shell variable
+        echo "Using controller image: $$FULL_IMAGE"
 
-        # _INFRA_APPLY_TRIGGER_ID is a Cloud Build substitution, so its $ should NOT be escaped.
-        # FULL_IMAGE is a shell variable, so escape its $ when passing its value as a substitution.
         gcloud builds triggers run "$_INFRA_APPLY_TRIGGER_ID" \
-          --branch=main \
+          --region="${_REGION}" \
+          --project="${PROJECT_ID}" \
+          --branch="main" \
           --substitutions=_CONTROLLER_IMAGE="$$FULL_IMAGE"
-          
+
