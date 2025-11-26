@@ -77,3 +77,4 @@ steps:
         gcloud builds triggers run "$_INFRA_APPLY_TRIGGER_ID" \
           --branch=main \
           --substitutions=_CONTROLLER_IMAGE="$$FULL_IMAGE"
+          
