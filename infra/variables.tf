@@ -24,10 +24,6 @@ variable "runtime_sa_name" {
   default = "finops-runtime"
 }
 
-variable "billing_account_id" {
-  description = "Cloud Billing Account ID as shown in console (e.g. 01ABCD-123456-7890AB)"
-  type        = string
-}
 
 variable "bq_dataset" {
   type    = string

@@ -214,13 +214,3 @@ resource "google_pubsub_subscription" "budgets_to_controller" {
   }
 }
 
-
-locals {
-  budgets_sa = "serviceAccount:service-${var.billing_account_id}@gcp-sa-billingbudgets.iam.gserviceaccount.com"
-}
-
-resource "google_pubsub_topic_iam_member" "billing_publisher" {
-  topic  = google_pubsub_topic.budgets.name
-  role   = "roles/pubsub.publisher"
-  member = local.budgets_sa
-}
