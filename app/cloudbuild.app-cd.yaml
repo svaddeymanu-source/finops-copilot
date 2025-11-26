@@ -71,4 +71,5 @@ steps:
           --project="${PROJECT_ID}" \
           --branch="main" \
           --substitutions=_CONTROLLER_IMAGE="$$FULL_IMAGE"
+          
 
