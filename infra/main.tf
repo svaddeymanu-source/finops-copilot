@@ -60,6 +60,7 @@ locals {
     "roles/bigquery.dataEditor",
     "roles/bigquery.user",
     "roles/artifactregistry.reader",
+    "roles/secretmanager.secretAccessor",
   ]
 }
 
