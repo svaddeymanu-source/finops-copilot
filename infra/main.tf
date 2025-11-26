@@ -98,6 +98,8 @@ locals {
     "roles/run.admin",
     "roles/iam.serviceAccountAdmin",
     "roles/secretmanager.admin",
+    "roles/cloudbuild.builds.editor",
+    "roles/cloudbuild.serviceAgent"
   ])
 }
 
