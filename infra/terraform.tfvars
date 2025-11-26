@@ -3,4 +3,4 @@ repo_owner   = "svaddeymanu-source"
 repo_name    = "finops-copilot"
 region     = "us-central1"
 ar_repo    = "finops-app"
-billing_account_id = "01ABCD-123456-7890AB"
+
