@@ -5,3 +5,4 @@ output "artifact_registry_repo" { value = "${var.region}-docker.pkg.dev/${var.pr
 output "cloud_build_sa" { value = "${data.google_project.this.number}@cloudbuild.gserviceaccount.com" }
 
 
+

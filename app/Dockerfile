@@ -15,3 +15,4 @@ ENV PORT=8080 GUNICORN_WORKERS=2
 
 # Use a shell so $PORT expands; bind 0.0.0.0 (required in Cloud Run)
 CMD ["sh","-c","exec gunicorn -w ${GUNICORN_WORKERS} -b 0.0.0.0:${PORT} main:app"]
+
